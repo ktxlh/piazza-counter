@@ -19,11 +19,10 @@ p.user_login()
 class_p = p.network(class_id)
 users = class_p.get_all_users()
 
-instructors = list(filter(lambda x: x['role'] in {'professor', 'ta'}, users))
 students = list(filter(lambda x: x['role'] == 'student', users))
+students = list(filter(lambda x: len(x['name']) > 0, students))
 student_uid_map = {x['id']: x['name'] for x in students}
 
-students = list(filter(lambda x: len(x['name']) > 0, users))
 names = list(set(map(lambda x: x['name'], students)))  # deduplicate
 names.sort(key=lambda x: x)  # sort by full name
 names.sort(key=lambda x: x.split()[-1])  # sort by last name
@@ -36,10 +35,11 @@ for cid in cids:
     post = class_p.get_post(cid)
     subject = post['history'][-1]['subject']
     scores = [0 for _ in range(len(df))]
-    for c in post["children"]:
-        idx = name_idx_map[student_uid_map[c['uid']]]
-        scores[idx] = len(c['tag_good']) + 1
-        sum_scores[idx] += len(c['tag_good']) + 1
+    for child in post["children"]:
+        idx = name_idx_map[student_uid_map[child['uid']]]
+        admin_endorses = list(filter(lambda x: x['admin'], child['tag_good']))
+        scores[idx] = len(admin_endorses) + 1
+        sum_scores[idx] += len(admin_endorses) + 1
     df[subject] = scores
 df['sum'] = sum_scores
 
